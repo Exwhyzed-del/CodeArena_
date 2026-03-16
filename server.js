@@ -107,33 +107,33 @@ app.post('/api/auth', (req, res) => {
     }
 });
 
-// app.get('/api/problem/:id', (req, res) => {
-//     const problem = PROBLEMS.find(p => p.id === parseInt(req.params.id));
-//     if (!problem) return res.status(404).json({ error: "Not found" });
-//     res.json(problem);
-// });
+app.get('/api/problem/:id', (req, res) => {
+    const problem = PROBLEMS.find(p => p.id === parseInt(req.params.id));
+    if (!problem) return res.status(404).json({ error: "Not found" });
+    res.json(problem);
+});
 
-// // --- EXECUTION & SCORING ENGINE ---
-// app.post('/api/run', (req, res) => {
-//     const { code, language, input, problemId, timeElapsed } = req.body; // timeElapsed sent from client
-//     const problem = PROBLEMS.find(p => p.id === problemId);
+// --- EXECUTION & SCORING ENGINE ---
+app.post('/api/run', (req, res) => {
+    const { code, language, input, problemId, timeElapsed } = req.body; // timeElapsed sent from client
+    const problem = PROBLEMS.find(p => p.id === problemId);
     
-//     if (!problem) return res.status(400).json({ error: "Problem not found" });
+    if (!problem) return res.status(400).json({ error: "Problem not found" });
 
-//     let output = "";
-//     let status = "error";
-//     let score = 0;
-//     let execTimeMs = 0;
+    let output = "";
+    let status = "error";
+    let score = 0;
+    let execTimeMs = 0;
 
-//     try {
-//         if (language === 'javascript') {
-//             const inputLines = input.split('\n');
-//             let lineIndex = 0;
+    try {
+        if (language === 'javascript') {
+            const inputLines = input.split('\n');
+            let lineIndex = 0;
             
-//             const sandbox = {
-//                 readline: () => inputLines[lineIndex++] || "",
-//                 console: { log: (...args) => { output += args.join(' ') + "\n"; } }
-//             };
+            const sandbox = {
+                readline: () => inputLines[lineIndex++] || "",
+                console: { log: (...args) => { output += args.join(' ') + "\n"; } }
+            };
 
 //             vm.createContext(sandbox);
             
