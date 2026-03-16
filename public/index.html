@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeArena | Node.js Edition</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <!-- 1. Authentication View -->
+    <section id="auth-view">
+        <div class="auth-card">
+            <h1 class="auth-title">CodeArena</h1>
+            <div class="auth-subtitle" id="auth-subtitle">Login to compete or practice</div>
+            <div id="auth-forms-container"></div>
+            <div class="auth-toggle">
+                <span id="auth-toggle-text">New here?</span>
+                <button class="btn-link" onclick="app.toggleAuthMode()" id="auth-toggle-btn">Create Account</button>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <span class="connection-status status-connected" id="connection-status">Server Connected</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Dashboard View -->
+    <section id="dashboard-view" class="hidden">
+        <header style="margin-bottom: 2rem; background: transparent; border: none; padding: 0;">
+            <div class="text-xl">CodeArena <span style="font-weight: 400; color: var(--text-muted)">| Dashboard</span></div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <div id="user-display" class="font-bold text-accent-primary"></div>
+                </div>
+                <button class="btn-secondary btn-sm" onclick="app.logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="dashboard-nav">
+            <div class="nav-tab active" onclick="ui.switchTab('multiplayer')" id="tab-multiplayer">🔥 Live Battles</div>
+            <div class="nav-tab" onclick="ui.switchTab('practice')" id="tab-practice">🧘 Practice Mode</div>
+        </div>
+
+        <div id="view-multiplayer">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <h3>Active Multiplayer Rooms</h3>
+                <div class="flex gap-2">
+                    <button class="btn-secondary" onclick="ui.openJoinModal()">Join Room</button>
+                    <button class="btn-primary" onclick="ui.openCreateModal()">+ Create Room</button>
+                </div>
+            </div>
+            <p class="text-xs text-muted mb-4">Rooms appear here if created recently.</p>
+            <div id="room-list" class="room-grid"></div>
+        </div>
+
+        <div id="view-practice" class="hidden">
+            <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
+                <h3>Problem Set (10 Challenges)</h3>
+                <span class="text-sm text-muted">Write full code. Read from Input, Print to Output.</span>
+            </div>
+            <div id="practice-list" class="room-grid"></div>
+        </div>
+    </section>
+
+    <!-- Modals -->
+    <div id="create-room-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1rem;">Select Challenge</h3>
+            <div id="problem-selection-list" class="problem-carousel"></div>
+            <div class="flex justify-between" style="margin-top: 1.5rem;">
+                <button class="btn-secondary" onclick="ui.closeCreateModal()">Cancel</button>
+                <button class="btn-primary" onclick="app.confirmCreateRoom()">Create Battle Room</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="join-room-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1.5rem;">Join Battle</h3>
+            <div class="form-group">
+                <label>Room Code</label>
+                <input type="text" id="modal-join-code" placeholder="e.g. A1B2C3" style="text-transform: uppercase; text-align: center; letter-spacing: 2px;">
+            </div>
+            <div class="flex justify-between" style="margin-top: 2rem;">
+                <button class="btn-secondary" onclick="ui.closeJoinModal()">Cancel</button>
+                <button class="btn-primary" onclick="app.confirmJoinRoom()">Join Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Arena View -->
+    <section id="arena-view" class="hidden">
+        <header>
+            <div class="flex items-center gap-4">
+                <span class="text-xl" style="font-weight: bold; color: white;">CodeArena</span>
+                <span class="mode-indicator mode-battle" id="mode-badge">BATTLE MODE</span>
+                <button class="btn-secondary text-xs hidden" id="room-code-btn" onclick="app.copyRoomCode()">ROOM: ---</button>
+                <span class="badge" id="problem-badge-display">EASY</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div style="text-align: right;" id="timer-container">
+                    <div class="text-xs text-muted">TIME REMAINING</div>
+                    <div id="timer-display" style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 600;">15:00</div>
+                </div>
+                <button class="btn-danger" onclick="app.leaveRoom()">Exit</button>
+            </div>
+        </header>
+
+        <div class="arena-main">
+            <div class="left-panel">
+                <div class="problem-split">
+                    <div class="editor-toolbar">
+                        <span style="font-weight: 600; font-size: 0.9rem;">Problem Description</span>
+                        <select id="language-selector" onchange="editor.changeLanguage(this.value)">
+                            <option value="javascript">JavaScript (Node.js)</option>
+                            <option value="python">Python 3</option>
+                            <option value="cpp">C++ (GCC 9)</option>
+                        </select>
+                    </div>
+                    <div class="problem-content" id="problem-description"></div>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-toolbar">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-muted" id="filename-display">main.js</span>
+                            <button class="btn-link text-xs" onclick="editor.resetCode()">Reset Code</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-secondary text-sm" onclick="editor.runCode('sample')">▶ Run</button>
+                            <button class="btn-success text-sm" onclick="editor.runCode('submit')">⚡ Submit</button>
+                        </div>
+                    </div>
+                    <div class="code-wrapper">
+                        <div class="line-numbers" id="line-numbers">1</div>
+                        <textarea id="code-editor" spellcheck="false" oninput="editor.updateLineNumbers()" onkeydown="editor.handleTab(event)" onscroll="editor.syncScroll()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel" id="right-panel">
+                <div class="panel-section">
+                    <div class="panel-header">
+                        <span>Leaderboard</span>
+                        <span class="text-xs" id="participant-count">0 Players</span>
+                    </div>
+                    <ul class="leaderboard-list" id="leaderboard"></ul>
+                </div>
+                <div class="panel-section chat-area">
+                    <div class="panel-header">Live Chat</div>
+                    <div class="chat-messages" id="chat-box"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-msg" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') app.sendChat()">
+                        <button class="btn-primary btn-icon" onclick="app.sendChat()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="console-overlay">
+            <div class="console-header">
+                <div class="flex gap-4">
+                    <span>TERMINAL OUTPUT</span>
+                    <span id="run-mode-indicator" class="text-warning">MODE: RUN</span>
+                </div>
+                <button class="btn-secondary btn-icon" style="border: 1px solid #333;" onclick="editor.toggleConsole()">✕ Close</button>
+            </div>
+            <div class="console-body" id="console-output"></div>
+        </div>
+    </section>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/client.js"></script>
+</body>
+</html>
