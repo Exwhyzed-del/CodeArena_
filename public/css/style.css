@@ -32,3 +32,19 @@ body { font-family: var(--font-sans); background-color: var(--bg-dark); color: v
 .w-full { width: 100%; }
 
 button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 600; transition: all 0.2s; font-family: var(--font-sans); font-size: 0.9rem; }
+button:hover { filter: brightness(1.1); }
+.btn-primary { background: var(--accent-primary); color: white; }
+.btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); }
+.btn-link { background: transparent; color: var(--accent-primary); padding: 0; text-decoration: underline; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-icon { padding: 4px 8px; font-size: 12px; }
+.btn-success { background: var(--success); color: white; }
+
+input, select, textarea { background: var(--bg-input); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 100%; font-family: var(--font-sans); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent-primary); }
+
+#toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+.toast { background: var(--bg-panel); border-left: 4px solid var(--accent-primary); padding: 15px 20px; border-radius: 4px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); animation: slideIn 0.3s; min-width: 280px; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
