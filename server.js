@@ -135,131 +135,131 @@ app.post('/api/run', (req, res) => {
                 console: { log: (...args) => { output += args.join(' ') + "\n"; } }
             };
 
-//             vm.createContext(sandbox);
+            vm.createContext(sandbox);
             
-//             // Measure Execution Time
-//             const start = performance.now();
-//             vm.runInContext(code, sandbox, { timeout: 5000 });
-//             const end = performance.now();
+            // Measure Execution Time
+            const start = performance.now();
+            vm.runInContext(code, sandbox, { timeout: 5000 });
+            const end = performance.now();
             
-//             execTimeMs = end - start;
-//             output = output.trim();
+            execTimeMs = end - start;
+            output = output.trim();
             
-//             if (output === problem.sampleOutput.trim()) {
-//                 status = "accepted";
+            if (output === problem.sampleOutput.trim()) {
+                status = "accepted";
                 
-//                 // --- SCORING LOGIC ---
-//                 // Base Points
-//                 let basePoints = 500;
+                // --- SCORING LOGIC ---
+                // Base Points
+                let basePoints = 500;
                 
-//                 // Speed Bonus (The faster the code runs, the more points)
-//                 // Under 5ms is considered optimal for these problems
-//                 let speedBonus = 0;
-//                 if (execTimeMs < 2) speedBonus = 500;      // Extremely fast
-//                 else if (execTimeMs < 10) speedBonus = 300; // Fast
-//                 else if (execTimeMs < 50) speedBonus = 100; // Okay
+                // Speed Bonus (The faster the code runs, the more points)
+                // Under 5ms is considered optimal for these problems
+                let speedBonus = 0;
+                if (execTimeMs < 2) speedBonus = 500;      // Extremely fast
+                else if (execTimeMs < 10) speedBonus = 300; // Fast
+                else if (execTimeMs < 50) speedBonus = 100; // Okay
                 
-//                 // Time Bonus (Time taken to submit)
-//                 // timeElapsed is seconds passed. We assume max 900s (15m).
-//                 // Earlier submission = Higher bonus
-//                 let timeBonus = Math.floor(Math.max(0, 900 - timeElapsed) * 1.5);
+                // Time Bonus (Time taken to submit)
+                // timeElapsed is seconds passed. We assume max 900s (15m).
+                // Earlier submission = Higher bonus
+                let timeBonus = Math.floor(Math.max(0, 900 - timeElapsed) * 1.5);
 
-//                 score = basePoints + speedBonus + timeBonus;
-//             } else {
-//                 status = "wrong_answer";
-//             }
-//         } else {
-//             // Simulation for other langs
-//             execTimeMs = 15;
-//             if (code.length > 20) {
-//                 output = problem.sampleOutput;
-//                 status = "accepted";
-//                 score = 800; // Default simulated score
-//             }
-//         }
-//     } catch (e) {
-//         output = "Error: " + e.message;
-//         status = "error";
-//         execTimeMs = 0;
-//     }
+                score = basePoints + speedBonus + timeBonus;
+            } else {
+                status = "wrong_answer";
+            }
+        } else {
+            // Simulation for other langs
+            execTimeMs = 15;
+            if (code.length > 20) {
+                output = problem.sampleOutput;
+                status = "accepted";
+                score = 800; // Default simulated score
+            }
+        }
+    } catch (e) {
+        output = "Error: " + e.message;
+        status = "error";
+        execTimeMs = 0;
+    }
 
-//     res.json({ output, status, expected: problem.sampleOutput, score, execTimeMs });
-// });
+    res.json({ output, status, expected: problem.sampleOutput, score, execTimeMs });
+});
 
 
-// // --- SOCKET.IO LOGIC ---
-// io.on('connection', (socket) => {
-//     console.log('User connected:', socket.id);
+// --- SOCKET.IO LOGIC ---
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
 
-//     socket.on('createRoom', ({ problemId, user }) => {
-//         const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
-//         const problem = PROBLEMS.find(p => p.id === problemId);
+    socket.on('createRoom', ({ problemId, user }) => {
+        const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+        const problem = PROBLEMS.find(p => p.id === problemId);
         
-//         if (!problem) return;
+        if (!problem) return;
 
-//         // Initialize room with host
-//         rooms[roomCode] = {
-//             problemId,
-//             players: [{ id: socket.id, name: user.name, score: 0, avatarColor: user.avatarColor }]
-//         };
+        // Initialize room with host
+        rooms[roomCode] = {
+            problemId,
+            players: [{ id: socket.id, name: user.name, score: 0, avatarColor: user.avatarColor }]
+        };
 
-//         socket.join(roomCode);
+        socket.join(roomCode);
         
-//         // Send problem and current player list (just host) back to host
-//         socket.emit('roomCreated', { roomCode, problem, players: rooms[roomCode].players });
+        // Send problem and current player list (just host) back to host
+        socket.emit('roomCreated', { roomCode, problem, players: rooms[roomCode].players });
         
-//         // Update Lobby
-//         io.emit('lobbyUpdate', { type: 'add', room: { code: roomCode, title: problem.title, host: user.name } });
-//     });
+        // Update Lobby
+        io.emit('lobbyUpdate', { type: 'add', room: { code: roomCode, title: problem.title, host: user.name } });
+    });
 
-//     socket.on('joinRoom', ({ roomCode, user }) => {
-//         const room = rooms[roomCode];
-//         if (!room) return socket.emit('error', "Room not found");
+    socket.on('joinRoom', ({ roomCode, user }) => {
+        const room = rooms[roomCode];
+        if (!room) return socket.emit('error', "Room not found");
 
-//         // Add player to room
-//         room.players.push({ id: socket.id, name: user.name, score: 0, avatarColor: user.avatarColor });
-//         socket.join(roomCode);
+        // Add player to room
+        room.players.push({ id: socket.id, name: user.name, score: 0, avatarColor: user.avatarColor });
+        socket.join(roomCode);
         
-//         const problem = PROBLEMS.find(p => p.id === room.problemId);
+        const problem = PROBLEMS.find(p => p.id === room.problemId);
         
-//         // 1. Tell the new player they joined, sending CURRENT players list
-//         socket.emit('joinedRoom', { roomCode, problem, players: room.players });
+        // 1. Tell the new player they joined, sending CURRENT players list
+        socket.emit('joinedRoom', { roomCode, problem, players: room.players });
         
-//         // 2. Tell everyone else in the room to update their list
-//         io.to(roomCode).emit('updatePlayers', room.players);
-//     });
+        // 2. Tell everyone else in the room to update their list
+        io.to(roomCode).emit('updatePlayers', room.players);
+    });
 
-//     socket.on('submitScore', ({ roomCode, score }) => {
-//         const room = rooms[roomCode];
-//         if (!room) return;
+    socket.on('submitScore', ({ roomCode, score }) => {
+        const room = rooms[roomCode];
+        if (!room) return;
 
-//         const player = room.players.find(p => p.id === socket.id);
-//         if (player) {
-//             player.score = Math.max(player.score, score);
-//             io.to(roomCode).emit('updatePlayers', room.players);
-//         }
-//     });
+        const player = room.players.find(p => p.id === socket.id);
+        if (player) {
+            player.score = Math.max(player.score, score);
+            io.to(roomCode).emit('updatePlayers', room.players);
+        }
+    });
 
-//     socket.on('sendMessage', ({ roomCode, text, sender }) => {
-//         io.to(roomCode).emit('newMessage', { text, sender });
-//     });
+    socket.on('sendMessage', ({ roomCode, text, sender }) => {
+        io.to(roomCode).emit('newMessage', { text, sender });
+    });
 
-//     socket.on('disconnect', () => {
-//         for (const code in rooms) {
-//             const room = rooms[code];
-//             const idx = room.players.findIndex(p => p.id === socket.id);
-//             if (idx !== -1) {
-//                 room.players.splice(idx, 1);
-//                 io.to(code).emit('updatePlayers', room.players);
-//                 if (room.players.length === 0) {
-//                     delete rooms[code];
-//                     io.emit('lobbyUpdate', { type: 'remove', code });
-//                 }
-//             }
-//         }
-//     });
-// });
+    socket.on('disconnect', () => {
+        for (const code in rooms) {
+            const room = rooms[code];
+            const idx = room.players.findIndex(p => p.id === socket.id);
+            if (idx !== -1) {
+                room.players.splice(idx, 1);
+                io.to(code).emit('updatePlayers', room.players);
+                if (room.players.length === 0) {
+                    delete rooms[code];
+                    io.emit('lobbyUpdate', { type: 'remove', code });
+                }
+            }
+        }
+    });
+});
 
-// server.listen(PORT, () => {
-//     console.log(`Server running at http://localhost:${PORT}`);
-// });
+server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
