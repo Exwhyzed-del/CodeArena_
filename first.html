@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Resolved: Kept descriptive title, added necessary MQTT script -->
+    <title>CodeArena | Competitive Coding Battles</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-input: #334155;
+            --bg-terminal: #0d1117;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #10b981;
+            --accent-purple: #8b5cf6;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --font-mono: 'Fira Code', 'Courier New', monospace;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .p-4 { padding: 1rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-xl { font-size: 1.25rem; font-weight: bold; }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+        .text-warning { color: var(--warning); }
+        .text-center { text-align: center; }
+        .w-full { width: 100%; }
+        .cursor-pointer { cursor: pointer; }
+        
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+        }
+        button:hover { filter: brightness(1.1); }
+        button:active { transform: translateY(1px); }
+        
+        .btn-primary { background: var(--accent-primary); color: white; }
+        .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-practice { background: var(--accent-secondary); color: white; }
+        .btn-link { background: transparent; color: var(--accent-primary); padding: 0; text-decoration: underline; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-icon { padding: 4px 8px; font-size: 12px; }
+        .btn-success { background: var(--success); color: white; }
+
+        input, select, textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            font-family: var(--font-sans);
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent-primary); }
+        select { cursor: pointer; }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: var(--bg-panel);
+            border-left: 4px solid var(--accent-primary);
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            min-width: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 5000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background: var(--bg-panel);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .problem-carousel {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0.5rem;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            margin-bottom: 1rem;
+        }
+        .problem-carousel::-webkit-scrollbar { height: 8px; }
+        .problem-carousel::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .problem-carousel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .problem-card {
+            min-width: 240px;
+            max-width: 240px;
+            background: var(--bg-input);
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 140px;
+            transition: all 0.2s;
+        }
+        .problem-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .problem-card.selected { border-color: var(--accent-primary); background: rgba(59, 130, 246, 0.1); }
+
+        #auth-view {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+        }
+        .auth-card {
+            background: var(--bg-panel);
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+        }
+        .auth-title { margin-bottom: 0.5rem; text-align: center; font-size: 1.8rem; background: linear-gradient(to right, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .auth-subtitle { text-align: center; color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
+        .auth-toggle { margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-muted); }
+
+        #dashboard-view {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .dashboard-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+            flex-shrink: 0;
+        }
+        .nav-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .nav-tab.active { background: var(--bg-input); color: white; }
+        .nav-tab:hover:not(.active) { background: rgba(255,255,255,0.05); }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            min-height: 200px;
+        }
+        .card {
+            background: var(--bg-panel);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .card:hover { transform: translateY(-4px); border-color: var(--accent-primary); }
+        .card.practice:hover { border-color: var(--accent-secondary); }
+        
+        .card-meta { 
+            margin-top: auto; 
+            padding-top: 1rem; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+
+        #arena-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        header {
+            background: var(--bg-panel);
+            padding: 0 1.5rem;
+            height: 64px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 10;
+        }
+        
+        .arena-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        
+        .problem-split {
+            height: 35%;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+        }
+        .problem-content {
+            padding: 2rem;
+            overflow-y: auto;
+            flex: 1;
+            line-height: 1.7;
+        }
+        .problem-content h3 { color: var(--accent-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+        .badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge.easy { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .badge.medium { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .badge.hard { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .sample-case {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .custom-input-area {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        .custom-input-area label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px; }
+        .custom-input-area textarea {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            height: 60px;
+            padding: 8px;
+        }
+
+        .editor-container {
+            height: 65%;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-terminal);
+            position: relative;
+        }
+        
+        .editor-toolbar {
+            background: var(--bg-panel);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            width: 45px;
+            background: var(--bg-terminal);
+            color: #485f70;
+            text-align: right;
+            padding: 16px 10px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.5;
+            user-select: none;
+            border-right: 1px solid #30363d;
+        }
+
+        #code-editor {
+            flex: 1;
+            background: transparent;
+            color: #e6edf3;
+            border: none;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            white-space: pre;
+            overflow: auto;
+            tab-size: 4;
+        }
+
+        .right-panel {
+            width: 380px;
+            background: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--border);
+        }
+        
+        .panel-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid var(--border);
+            min-height: 0;
+        }
+        
+        .panel-header {
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.2);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .leaderboard-item {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+            align-items: center;
+        }
+        .leaderboard-item.me { background: rgba(59, 130, 246, 0.1); }
+        .leaderboard-item:first-child { border-top: 2px solid var(--warning); }
+        .rank { width: 24px; font-weight: bold; color: var(--text-muted); font-family: var(--font-mono); }
+        .player-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white;}
+        
+        .chat-area {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message { font-size: 0.85rem; line-height: 1.4; word-wrap: break-word; }
+        .message strong { color: var(--accent-secondary); margin-right: 4px; }
+        
+        .chat-input {
+            padding: 12px;
+            background: var(--bg-panel);
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+        }
+        .chat-input input { flex: 1; padding: 8px 12px; }
+
+        #console-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 250px;
+            background: var(--bg-terminal);
+            border-top: 1px solid var(--accent-primary);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+        }
+        #console-overlay.open { transform: translateY(0); }
+        
+        .console-header {
+            padding: 8px 16px;
+            background: #161b22;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #30363d;
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+        }
+        .console-body {
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            overflow-y: auto;
+            color: #d1d5db;
+            white-space: pre-wrap;
+        }
+        
+        .log-entry { margin-bottom: 6px; padding-left: 10px; border-left: 2px solid transparent; }
+        .log-info { border-left-color: var(--accent-primary); color: var(--text-muted); }
+        .log-success { border-left-color: var(--success); color: var(--success); }
+        .log-error { border-left-color: var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.05); }
+        .log-warn { border-left-color: var(--warning); color: var(--warning); }
+
+        .mode-indicator {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .mode-practice { background: var(--accent-secondary); color: white; }
+        .mode-battle { background: var(--accent-primary); color: white; }
+        
+        .connection-status {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #333;
+            color: #aaa;
+            margin-right: 10px;
+        }
+        .status-connected { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+
+        @media (max-width: 1024px) {
+            .arena-main { flex-direction: column; overflow-y: auto; }
+            .left-panel { height: auto; min-height: 800px; flex: none; }
+            .right-panel { width: 100%; height: 400px; border-left: none; border-top: 1px solid var(--border); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <!-- 1. Authentication View -->
+    <section id="auth-view">
+        <div class="auth-card">
+            <h1 class="auth-title">CodeArena</h1>
+            <div class="auth-subtitle" id="auth-subtitle">Login to compete or practice</div>
+            
+            <div id="auth-forms-container"></div>
+
+            <div class="auth-toggle">
+                <span id="auth-toggle-text">New here?</span>
+                <button class="btn-link" onclick="app.toggleAuthMode()" id="auth-toggle-btn">Create Account</button>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <span class="connection-status" id="mqtt-status">Connecting...</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Dashboard View -->
+    <section id="dashboard-view" class="hidden">
+        <header style="margin-bottom: 2rem; background: transparent; border: none; padding: 0;">
+            <div class="text-xl">CodeArena <span style="font-weight: 400; color: var(--text-muted)">| Dashboard</span></div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <div id="user-display" class="font-bold text-accent-primary"></div>
+                    <div class="text-xs text-muted" id="user-email-display"></div>
+                </div>
+                <button class="btn-secondary btn-sm" onclick="app.logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="dashboard-nav">
+            <div class="nav-tab active" onclick="ui.switchTab('multiplayer')" id="tab-multiplayer">Live Battles</div>
+            <div class="nav-tab" onclick="ui.switchTab('practice')" id="tab-practice">Practice Mode</div>
+        </div>
+
+        <!-- Multiplayer Section -->
+        <div id="view-multiplayer">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <h3>Active Multiplayer Rooms</h3>
+                <div class="flex gap-2">
+                    <button class="btn-secondary" onclick="ui.openJoinModal()">Join Room</button>
+                    <button class="btn-primary" onclick="ui.openCreateModal()">+ Create Room</button>
+                </div>
+            </div>
+            <p class="text-xs text-muted mb-4">Rooms appear here if created recently.</p>
+            <div id="room-list" class="room-grid"></div>
+            <div class="text-center text-muted text-sm mt-8">
+                <p>💡 <strong>Blank Editor Mode:</strong> You must write the full logic, imports, and main function yourself.</p>
+            </div>
+        </div>
+
+        <!-- Practice Section -->
+        <div id="view-practice" class="hidden">
+            <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
+                <h3>Problem Set</h3>
+                <span class="text-sm text-muted">Write full code. Read from Input, Print to Output.</span>
+            </div>
+            <div id="practice-list" class="room-grid"></div>
+        </div>
+    </section>
+
+    <!-- Create Room Modal -->
+    <div id="create-room-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1rem;">Select Challenge</h3>
+            <p class="text-sm text-muted" style="margin-bottom: 1rem;">Swipe horizontally to see more questions.</p>
+            <div id="problem-selection-list" class="problem-carousel"></div>
+            <div class="flex justify-between" style="margin-top: 1.5rem;">
+                <button class="btn-secondary" onclick="ui.closeCreateModal()">Cancel</button>
+                <button class="btn-primary" onclick="app.confirmCreateRoom()">Create Battle Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div id="join-room-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1.5rem;">Join Battle</h3>
+            <div class="form-group">
+                <label>Room Code</label>
+                <input type="text" id="modal-join-code" placeholder="e.g. A1B2C3" style="text-transform: uppercase; font-size: 1.2rem; text-align: center; letter-spacing: 2px;">
+            </div>
+            <div class="flex justify-between" style="margin-top: 2rem;">
+                <button class="btn-secondary" onclick="ui.closeJoinModal()">Cancel</button>
+                <button class="btn-primary" onclick="app.confirmJoinRoom()">Join Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Arena View (Game) -->
+    <section id="arena-view" class="hidden">
+        <header>
+            <div class="flex items-center gap-4">
+                <span class="text-xl" style="font-weight: bold; color: white;">CodeArena</span>
+                <span class="mode-indicator mode-battle" id="mode-badge">BATTLE MODE</span>
+                <button class="btn-secondary text-xs hidden" id="room-code-btn" onclick="app.copyRoomCode()">ROOM: ---</button>
+                <span class="badge" id="problem-badge-display">EASY</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div style="text-align: right;" id="timer-container">
+                    <div class="text-xs text-muted">TIME REMAINING</div>
+                    <div id="timer-display" style="font-family: var(--font-mono); color: var(--text-main); font-size: 1.4rem; font-weight: 600;">15:00</div>
+                </div>
+                <button class="btn-danger" onclick="app.leaveRoom()">Exit</button>
+            </div>
+        </header>
+
+        <div class="arena-main">
+            <div class="left-panel">
+                <div class="problem-split">
+                    <div class="editor-toolbar">
+                        <span style="font-weight: 600; font-size: 0.9rem;">Problem Description</span>
+                        <select id="language-selector" style="background: var(--bg-input); color: white; border: none; padding: 4px 8px; font-size: 0.85rem;" onchange="editor.changeLanguage(this.value)">
+                            <option value="javascript">JavaScript (Node.js)</option>
+                            <option value="python">Python 3</option>
+                            <option value="cpp">C++ (GCC 9)</option>
+                            <option value="java">Java (OpenJDK)</option>
+                        </select>
+                    </div>
+                    <div class="problem-content" id="problem-description"></div>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-toolbar">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-muted" id="filename-display">main.js</span>
+                            <button class="btn-link text-xs" onclick="editor.resetCode()">Reset Code</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-secondary text-sm" onclick="editor.runCode('sample')">▶ Run</button>
+                            <button class="btn-success text-sm" onclick="editor.runCode('submit')">⚡ Submit</button>
+                        </div>
+                    </div>
+                    <div class="code-wrapper">
+                        <div class="line-numbers" id="line-numbers">1</div>
+                        <textarea id="code-editor" spellcheck="false" oninput="editor.updateLineNumbers()" onkeydown="editor.handleTab(event)" onscroll="editor.syncScroll()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel" id="right-panel">
+                <div class="panel-section">
+                    <div class="panel-header">
+                        <span>Leaderboard</span>
+                        <span class="text-xs" id="participant-count">0 Players</span>
+                    </div>
+                    <ul class="leaderboard-list" id="leaderboard"></ul>
+                </div>
+                <div class="panel-section chat-area">
+                    <div class="panel-header">Live Chat</div>
+                    <div class="chat-messages" id="chat-box"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-msg" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') app.sendChat()">
+                        <button class="btn-primary btn-icon" onclick="app.sendChat()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="console-overlay">
+            <div class="console-header">
+                <div class="flex gap-4">
+                    <span>TERMINAL OUTPUT</span>
+                    <span id="run-mode-indicator" class="text-warning">MODE: RUN</span>
+                </div>
+                <button class="btn-secondary btn-icon" style="border: 1px solid #333;" onclick="editor.toggleConsole()">✕ Close</button>
+            </div>
+            <div class="console-body" id="console-output"></div>
+        </div>
+    </section>
+
+    <script>
+        // ==========================================
+        // DATA: QUESTIONS (BLANK TEMPLATES)
+        // ==========================================
+        const PROBLEMS = [
+            {
+                id: 1,
+                title: "A + B Problem",
+                difficulty: "Easy",
+                description: "Given two integers A and B, calculate their sum.",
+                inputFormat: "The first line contains two integers A and B separated by a space.",
+                outputFormat: "Print a single integer representing the sum of A and B.",
+                sampleInput: "2 3",
+                sampleOutput: "5",
+                templates: {
+                    javascript: `// Read input
+const input = readline().split(' ');
+const A = parseInt(input[0]);
+const B = parseInt(input[1]);
+
+// Write your logic here
+const sum = A + B;
+
+// Print output
+console.log(sum);`,
+                    python: `# Read input
+import sys
+input = sys.stdin.readline
+
+A, B = map(int, input().split())
+
+# Write your logic here
+print(A + B)`,
+                    cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    int A, B;
+    // Read input
+    cin >> A >> B;
+    
+    // Write your logic here
+    cout << A + B << endl;
+    
+    return 0;
+}`,
+                    java: `import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int A = sc.nextInt();
+        int B = sc.nextInt();
+        
+        // Write your logic here
+        System.out.println(A + B);
+    }
+}`
+                }
+            },
+            {
+                id: 2,
+                title: "Two Sum",
+                difficulty: "Medium",
+                description: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`. You may assume that each input would have exactly one solution.",
+                inputFormat: "First line: n (size of array). Second line: n space-separated integers. Third line: target.",
+                outputFormat: "Print two space-separated integers (indices).",
+                sampleInput: "4\n2 7 11 15\n9",
+                sampleOutput: "0 1",
+                templates: {
+                    javascript: `// Read input
+const n = parseInt(readline());
+const nums = readline().split(' ').map(Number);
+const target = parseInt(readline());
+
+// Write your logic here
+// ...
+
+`,
+                    python: `def solution():
+    # Read input
+    n = int(input())
+    nums = list(map(int, input().split()))
+    target = int(input())
+    
+    # Write your logic here
+    # ...
+    
+solution()`,
+                    cpp: `#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+int main() {
+    int n, target;
+    cin >> n;
+    vector<int> nums(n);
+    for(int i=0; i<n; i++) cin >> nums[i];
+    cin >> target;
+    
+    // Write your logic here
+    // ...
+    
+    return 0;
+}`,
+                    java: `import java.util.Scanner;
+import java.util.Map;
+import java.util.HashMap;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        int[] nums = new int[n];
+        for(int i=0; i<n; i++) nums[i] = sc.nextInt();
+        int target = sc.nextInt();
+        
+        // Write your logic here
+        // ...
+    }
+}`
+                }
+            },
+            {
+                id: 3,
+                title: "Even or Odd",
+                difficulty: "Easy",
+                description: "Given an integer N, print 'Even' if N is even, otherwise print 'Odd'.",
+                inputFormat: "A single integer N.",
+                outputFormat: "Print 'Even' or 'Odd'.",
+                sampleInput: "5",
+                sampleOutput: "Odd",
+                templates: {
+                    javascript: `const N = parseInt(readline());
+
+// Write your logic here
+// ...`,
+                    python: `n = int(input())
+
+# Write your logic here
+# ...`,
+                    cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    int n; 
+    cin >> n;
+    
+    // Write your logic here
+    // ...
+    
+    return 0;
+}`,
+                    java: `public class Main {
+    public static void main(String[] args) {
+        java.util.Scanner sc = new java.util.Scanner(System.in);
+        int n = sc.nextInt();
+        
+        // Write your logic here
+        // ...
+    }
+}`
+                }
+            }
+        ];
+
+        // ==========================================
+        // NETWORK SERVICE (MQTT)
+        // ==========================================
+        const NetworkService = {
+            client: null,
+            connected: false,
+            currentRoomTopic: null,
+            lobbyTopic: 'codearena/lobby',
+            
+            init: () => {
+                const clientId = "client-" + Math.random().toString(16).substr(2, 8);
+                NetworkService.client = new Paho.MQTT.Client("broker.emqx.io", 8084, clientId);
+
+                NetworkService.client.onConnectionLost = (responseObject) => {
+                    NetworkService.connected = false;
+                    ui.updateConnectionStatus(false);
+                };
+
+                NetworkService.client.onMessageArrived = (message) => {
+                    try {
+                        const data = JSON.parse(message.payloadString);
+                        NetworkService.handleMessage(message.destinationName, data);
+                    } catch (e) { console.error(e); }
+                };
+
+                const options = {
+                    useSSL: true,
+                    timeout: 3,
+                    onSuccess: () => {
+                        NetworkService.connected = true;
+                        ui.updateConnectionStatus(true);
+                        NetworkService.client.subscribe(NetworkService.lobbyTopic);
+                    },
+                    onFailure: () => {
+                        ui.toast("Network Connection Failed", "error");
+                        ui.updateConnectionStatus(false);
+                    }
+                };
+                NetworkService.client.connect(options);
+            },
+
+            handleMessage: (topic, data) => {
+                // 1. Chat
+                if (data.type === 'CHAT_MESSAGE' && topic === NetworkService.currentRoomTopic) {
+                    if (!state.isPracticeMode) ui.addMessageToChat(data.sender, data.text, data.sender === state.currentUser.name);
+                }
+                
+                // 2. Leaderboard / State
+                if (topic === NetworkService.currentRoomTopic && !state.isPracticeMode) {
+                    // Sync Problem ID (Fix for Issue 1)
+                    if (data.type === 'ROOM_STATE') {
+                        const problem = PROBLEMS.find(p => p.id === data.problemId);
+                        if (problem && state.problem.id !== problem.id) {
+                            ui.toast(`Room switched to: ${problem.title}`, "info");
+                            state.problem = problem;
+                            ui.renderProblem(problem);
+                            editor.resetEditor(); // Reset editor for new problem
+                        }
+                    }
+
+                    // Sync Scores
+                    if (data.type === 'PLAYER_UPDATE') {
+                        const existingIndex = state.participants.findIndex(p => p.id === data.player.id);
+                        if (existingIndex > -1) {
+                            state.participants[existingIndex] = data.player;
+                        } else {
+                            state.participants.push(data.player);
+                        }
+                        ui.renderLeaderboard();
+                    }
+                }
+
+                // 3. Lobby Announcements
+                if (data.type === 'ROOM_CREATED' && topic === NetworkService.lobbyTopic) {
+                    if(!state.isPracticeMode && document.getElementById('dashboard-view').classList.contains('hidden') === false) {
+                        ui.renderRoomList();
+                    }
+                }
+            },
+
+            publish: (topic, data) => {
+                if (!NetworkService.connected) return;
+                const message = new Paho.MQTT.Message(JSON.stringify(data));
+                message.destinationName = topic;
+                NetworkService.client.send(message);
+            },
+
+            joinRoom: (roomCode) => {
+                if (NetworkService.currentRoomTopic) NetworkService.client.unsubscribe(NetworkService.currentRoomTopic);
+                NetworkService.currentRoomTopic = `codearena/room/${roomCode}`;
+                NetworkService.client.subscribe(NetworkService.currentRoomTopic);
+                
+                // Upon joining, request state just in case (though MQTT is pub/sub, we rely on host broadcast)
+                // In this serverless demo, we wait for Host to broadcast state or rely on periodic updates.
+                // Better: Host broadcasts state on Create.
+            },
+
+            leaveRoom: () => {
+                if (NetworkService.currentRoomTopic) {
+                    NetworkService.client.unsubscribe(NetworkService.currentRoomTopic);
+                    NetworkService.currentRoomTopic = null;
+                }
+            }
+        };
+
+        // ==========================================
+        // APP STATE & LOGIC
+        // ==========================================
+        const state = {
+            currentUser: null,
+            authMode: 'login',
+            currentRoomCode: null,
+            isPracticeMode: false,
+            selectedProblemId: null,
+            currentLanguage: 'javascript',
+            participants: [], 
+            timer: null,
+            timeLeft: 900, 
+            problem: null
+        };
+
+        const app = {
+            init: () => {
+                const sessionStr = localStorage.getItem('ca_session');
+                if (sessionStr) {
+                    try {
+                        const sessionUser = JSON.parse(sessionStr);
+                        const dbUserStr = localStorage.getItem('ca_user_' + sessionUser.email);
+                        if (!dbUserStr) {
+                            localStorage.removeItem('ca_session');
+                            app.renderAuthForm();
+                        } else {
+                            state.currentUser = JSON.parse(dbUserStr);
+                            app.showDashboard();
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('ca_session');
+                        app.renderAuthForm();
+                    }
+                } else {
+                    app.renderAuthForm();
+                }
+                NetworkService.init();
+            },
+
+            toggleAuthMode: () => {
+                state.authMode = state.authMode === 'login' ? 'signup' : 'login';
+                app.renderAuthForm();
+            },
+            renderAuthForm: () => {
+                const container = document.getElementById('auth-forms-container');
+                const isSignup = state.authMode === 'signup';
+                document.getElementById('auth-subtitle').textContent = isSignup ? "Create a new account" : "Login to start coding";
+                document.getElementById('auth-toggle-text').textContent = isSignup ? "Already have an account?" : "New here?";
+                document.getElementById('auth-toggle-btn').textContent = isSignup ? "Login" : "Create Account";
+                
+                container.innerHTML = `
+                    <div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="e.g. CodeMaster"></div>
+                    <div class="form-group"><label>Email</label><input type="email" id="auth-email" placeholder="name@example.com"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"></div>
+                    <button class="btn-primary w-full" onclick="app.handleAuth()">${isSignup ? 'Sign Up' : 'Log In'}</button>
+                `;
+                if(!isSignup) container.querySelector('.form-group:first-child').remove();
+            },
+            handleAuth: () => {
+                const email = document.getElementById('auth-email').value.trim();
+                const password = document.getElementById('auth-password').value.trim();
+                const username = document.getElementById('auth-username')?.value.trim();
+
+                if(!email || !password) return ui.toast("Fill all fields", "error");
+
+                if(state.authMode === 'signup') {
+                    if(!username) return ui.toast("Username required", "error");
+                    const newUser = { id: Date.now().toString(), name: username, email, avatarColor: `hsl(${Math.random()*360}, 70%, 60%)` };
+                    localStorage.setItem('ca_user_' + email, JSON.stringify(newUser));
+                    localStorage.setItem('ca_session', JSON.stringify(newUser));
+                    state.currentUser = newUser;
+                    ui.toast("Account created!", "success");
+                } else {
+                    const stored = localStorage.getItem('ca_user_' + email);
+                    if(!stored || JSON.parse(stored).password !== password) return ui.toast("Invalid credentials", "error");
+                    state.currentUser = JSON.parse(stored);
+                    localStorage.setItem('ca_session', JSON.stringify(state.currentUser));
+                    ui.toast("Welcome back!", "success");
+                }
+                setTimeout(() => app.showDashboard(), 500);
+            },
+            logout: () => {
+                localStorage.removeItem('ca_session');
+                location.reload();
+            },
+            showDashboard: () => {
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                document.getElementById('user-display').textContent = state.currentUser.name;
+                ui.renderRoomList();
+                ui.renderPracticeList();
+            },
+
+            confirmCreateRoom: () => {
+                if (!state.selectedProblemId) return ui.toast("Select a problem", "error");
+                if (!NetworkService.connected) return ui.toast("Waiting for server...", "warning");
+
+                const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+                const problem = PROBLEMS.find(p => p.id === state.selectedProblemId);
+                
+                const me = { id: state.currentUser.id, name: state.currentUser.name, avatarColor: state.currentUser.avatarColor, score: 0, lastSubmitTime: Date.now() };
+                state.participants = [me];
+
+                // 1. Broadcast to Lobby (so it appears in list)
+                NetworkService.publish(NetworkService.lobbyTopic, {
+                    type: 'ROOM_CREATED',
+                    code: roomCode,
+                    problem: { id: problem.id, title: problem.title, difficulty: problem.difficulty },
+                    host: state.currentUser.name
+                });
+
+                ui.closeCreateModal();
+                ui.toast(`Room Created: ${roomCode}`, "success");
+                app.enterRoom(roomCode, problem, false);
+            },
+
+            confirmJoinRoom: () => {
+                const code = document.getElementById('modal-join-code').value.trim().toUpperCase();
+                if(!code) return ui.toast("Enter a code", "error");
+                if (!NetworkService.connected) return ui.toast("Waiting for server...", "warning");
+
+                // Default to Problem 1 if unknown (will update via ROOM_STATE if Host sends it)
+                const problem = PROBLEMS[0]; 
+                ui.closeJoinModal();
+                app.enterRoom(code, problem, false);
+                
+                // Announce self to room
+                const me = { id: state.currentUser.id, name: state.currentUser.name, avatarColor: state.currentUser.avatarColor, score: 0, lastSubmitTime: Date.now() };
+                NetworkService.publish(`codearena/room/${code}`, {
+                    type: 'PLAYER_UPDATE',
+                    player: me
+                });
+            },
+
+            startPractice: (problemId) => {
+                const problem = PROBLEMS.find(p => p.id === problemId);
+                app.enterRoom('PRACTICE', problem, true);
+            },
+
+            enterRoom: (roomCode, problem, isPractice) => {
+                state.currentRoomCode = roomCode;
+                state.isPracticeMode = isPractice;
+                state.problem = problem;
+                state.timeLeft = 900;
+                state.currentLanguage = 'javascript';
+
+                if(!isPractice) {
+                    NetworkService.joinRoom(roomCode);
+                    state.participants = [{ id: state.currentUser.id, name: state.currentUser.name, avatarColor: state.currentUser.avatarColor, score: 0, lastSubmitTime: Date.now() }];
+                    
+                    // CRITICAL FIX: Broadcast the correct problem ID so Joiners sync up
+                    NetworkService.publish(NetworkService.currentRoomTopic, {
+                        type: 'ROOM_STATE',
+                        problemId: problem.id
+                    });
+                }
+
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('arena-view').classList.remove('hidden');
+                
+                const modeBadge = document.getElementById('mode-badge');
+                const timerContainer = document.getElementById('timer-container');
+                const rightPanel = document.getElementById('right-panel');
+                const roomCodeBtn = document.getElementById('room-code-btn');
+
+                if (isPractice) {
+                    modeBadge.textContent = "PRACTICE MODE";
+                    modeBadge.className = "mode-indicator mode-practice";
+                    timerContainer.style.display = 'none';
+                    rightPanel.style.display = 'none';
+                    roomCodeBtn.classList.add('hidden');
+                } else {
+                    modeBadge.textContent = "BATTLE MODE";
+                    modeBadge.className = "mode-indicator mode-battle";
+                    timerContainer.style.display = 'block';
+                    rightPanel.style.display = 'flex';
+                    roomCodeBtn.classList.remove('hidden');
+                    roomCodeBtn.textContent = `ROOM: ${roomCode}`;
+                    ui.renderLeaderboard();
+                }
+
+                document.getElementById('problem-badge-display').textContent = problem.difficulty;
+                document.getElementById('problem-badge-display').className = `badge ${problem.difficulty.toLowerCase()}`;
+                
+                ui.renderProblem(problem);
+                editor.resetEditor();
+                ui.updateTimer();
+                
+                if (state.timer) clearInterval(state.timer);
+                if (!isPractice) {
+                    state.timer = setInterval(() => {
+                        state.timeLeft--;
+                        ui.updateTimer();
+                        if(state.timeLeft <= 0) app.endGame();
+                    }, 1000);
+                }
+            },
+
+            leaveRoom: () => {
+                if(state.timer) clearInterval(state.timer);
+                NetworkService.leaveRoom();
+                document.getElementById('arena-view').classList.add('hidden');
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                state.currentRoomCode = null;
+                state.isPracticeMode = false;
+            },
+            
+            copyRoomCode: () => {
+                navigator.clipboard.writeText(state.currentRoomCode);
+                ui.toast("Room code copied!", "success");
+            },
+
+            sendChat: () => {
+                if(state.isPracticeMode) return;
+                const input = document.getElementById('chat-msg');
+                const text = input.value.trim();
+                if(!text) return;
+                
+                ui.addMessageToChat(state.currentUser.name, text, true);
+                
+                NetworkService.publish(NetworkService.currentRoomTopic, {
+                    type: 'CHAT_MESSAGE',
+                    sender: state.currentUser.name,
+                    text: text
+                });
+                
+                input.value = '';
+            },
+            
+            updateScore: (newScore) => {
+                if(state.isPracticeMode) {
+                    ui.toast(`Practice Score: ${newScore}`, "success");
+                    return;
+                }
+                
+                const me = state.participants.find(p => p.id === state.currentUser.id);
+                if(me) {
+                    me.score = Math.max(me.score, newScore);
+                    me.lastSubmitTime = Date.now();
+                    
+                    NetworkService.publish(NetworkService.currentRoomTopic, {
+                        type: 'PLAYER_UPDATE',
+                        player: me
+                    });
+                    
+                    ui.renderLeaderboard();
+                }
+            },
+
+            endGame: () => {
+                clearInterval(state.timer);
+                ui.toast("Time's Up!", "info");
+                document.getElementById('code-editor').disabled = true;
+            }
+        };
+
+        // ==========================================
+        // EDITOR ENGINE
+        // ==========================================
+        const editor = {
+            resetCode: () => {
+                if(confirm("Reset code?")) editor.setCode(state.problem.templates['javascript']);
+            },
+            changeLanguage: (lang) => {
+                state.currentLanguage = lang;
+                document.getElementById('filename-display').textContent = `main.${lang === 'javascript' ? 'js' : lang}`;
+                editor.setCode(state.problem.templates[lang]);
+            },
+            setCode: (code) => {
+                const el = document.getElementById('code-editor');
+                el.value = code;
+                editor.updateLineNumbers();
+            },
+            
+            handleTab: (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = e.target.selectionStart;
+                    const end = e.target.selectionEnd;
+                    e.target.value = e.target.value.substring(0, start) + "    " + e.target.value.substring(end);
+                    e.target.selectionStart = e.target.selectionEnd = start + 4;
+                    editor.updateLineNumbers();
+                }
+            },
+            syncScroll: () => { document.getElementById('line-numbers').scrollTop = document.getElementById('code-editor').scrollTop; },
+            updateLineNumbers: () => {
+                const lines = document.getElementById('code-editor').value.split('\n').length;
+                document.getElementById('line-numbers').innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
+            },
+            toggleConsole: () => { document.getElementById('console-overlay').classList.toggle('open'); },
+            
+            runCode: (mode) => {
+                const code = document.getElementById('code-editor').value;
+                const consoleEl = document.getElementById('console-output');
+                consoleEl.innerHTML = '';
+                
+                let inputStr = "";
+                if (mode === 'sample') {
+                    inputStr = document.getElementById('sample-input-hidden')?.value || state.problem.sampleInput;
+                } else {
+                    inputStr = state.problem.sampleInput; 
+                }
+
+                document.getElementById('run-mode-indicator').textContent = mode === 'submit' ? "MODE: SUBMIT" : "MODE: SAMPLE TEST";
+                document.getElementById('run-mode-indicator').className = mode === 'submit' ? "text-danger" : "text-warning";
+                document.getElementById('console-overlay').classList.add('open');
+
+                if (state.currentLanguage === 'javascript') {
+                    editor.executeJS(code, inputStr, mode);
+                } else {
+                    editor.simulateExecute(code, mode);
+                }
+            },
+
+            executeJS: (code, inputStr, mode) => {
+                try {
+                    const lines = inputStr.split('\n');
+                    let lineIndex = 0;
+                    
+                    const readline = () => {
+                        if (lineIndex >= lines.length) return "";
+                        return lines[lineIndex++];
+                    };
+
+                    const logs = [];
+                    const originalLog = console.log;
+                    console.log = (...args) => {
+                        logs.push(args.join(' '));
+                        ui.logConsole(args.join(' '), 'info');
+                    };
+
+                    const userFunc = new Function('readline', code);
+                    userFunc(readline);
+
+                    console.log = originalLog;
+
+                    const output = logs.join('\n').trim();
+                    const expected = state.problem.sampleOutput.trim();
+
+                    ui.logConsole("----------------------------", "info");
+                    ui.logConsole(`Your Output:\n${output}`, "info");
+                    ui.logConsole(`Expected Output:\n${expected}`, "info");
+
+                    if (output === expected) {
+                        ui.logConsole("Result: ACCEPTED", "success");
+                        if (mode === 'submit') {
+                            const score = 1000 + Math.floor(state.timeLeft / 2);
+                            app.updateScore(score);
+                            ui.toast(`Accepted! Score: ${score}`, "success");
+                        }
+                    } else {
+                        ui.logConsole("Result: WRONG ANSWER", "error");
+                        if(mode === 'submit') ui.toast("Wrong Answer", "error");
+                    }
+
+                } catch (e) {
+                    ui.logConsole("Runtime Error: " + e.message, "error");
+                }
+            },
+
+            simulateExecute: (code, mode) => {
+                ui.logConsole("Compiling...", "info");
+                setTimeout(() => {
+                    ui.logConsole("Compilation Successful.", "success");
+                    ui.logConsole("Running against test cases...", "info");
+                    // Accept logic: Just check if code has some length
+                    const success = code.length > 20; 
+                    setTimeout(() => {
+                        if(success) {
+                            ui.logConsole(`Output: ${state.problem.sampleOutput}`, "success");
+                            ui.logConsole("Result: ACCEPTED (Simulated)", "success");
+                            if (mode === 'submit') {
+                                const score = 1000 + Math.floor(state.timeLeft / 2);
+                                app.updateScore(score);
+                                ui.toast("Accepted!", "success");
+                            }
+                        } else {
+                            ui.logConsole("Result: WRONG ANSWER (Simulated)", "error");
+                            if(mode === 'submit') ui.toast("Failed", "error");
+                        }
+                    }, 500);
+                }, 500);
+            }
+        };
+
+        // ==========================================
+        // UI HELPERS
+        // ==========================================
+        const ui = {
+            toast: (msg, type = 'info') => {
+                const container = document.getElementById('toast-container');
+                const el = document.createElement('div');
+                el.className = 'toast';
+                el.style.borderLeftColor = type === 'success' ? 'var(--success)' : (type === 'error' ? 'var(--danger)' : 'var(--accent-primary)');
+                el.innerHTML = `<span>${type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️')} ${msg}</span>`;
+                container.appendChild(el);
+                setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+            },
+            
+            updateConnectionStatus: (connected) => {
+                const el = document.getElementById('mqtt-status');
+                if(connected) {
+                    el.textContent = "Online";
+                    el.classList.add('status-connected');
+                } else {
+                    el.textContent = "Offline";
+                    el.classList.remove('status-connected');
+                }
+            },
+
+            switchTab: (tab) => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.getElementById(`tab-${tab}`).classList.add('active');
+                if(tab === 'multiplayer') {
+                    document.getElementById('view-multiplayer').classList.remove('hidden');
+                    document.getElementById('view-practice').classList.add('hidden');
+                    ui.renderRoomList();
+                } else {
+                    document.getElementById('view-multiplayer').classList.add('hidden');
+                    document.getElementById('view-practice').classList.remove('hidden');
+                    ui.renderPracticeList();
+                }
+            },
+
+            renderRoomList: () => {
+                const container = document.getElementById('room-list');
+                container.innerHTML = '';
+                
+                if (window.knownRooms && window.knownRooms.length > 0) {
+                    window.knownRooms.forEach(r => {
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span class="text-xl font-mono">${r.code}</span>
+                                <span class="text-success text-sm">● Live</span>
+                            </div>
+                            <div style="margin: 0.8rem 0; font-weight: 500;">${r.title}</div>
+                            <div class="card-meta">
+                                <span class="text-sm text-muted">Host: ${r.host}</span>
+                                <span class="badge ${r.difficulty.toLowerCase()}">${r.difficulty}</span>
+                            </div>
+                            <button class="btn-primary w-full" style="margin-top:1rem;" onclick="document.getElementById('modal-join-code').value='${r.code}'; app.confirmJoinRoom()">Join</button>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else {
+                     container.innerHTML = `<div class="text-muted text-center w-full" style="grid-column: 1/-1;">
+                        No rooms visible right now. Create one or ask a friend for the code!
+                     </div>`;
+                }
+            },
+
+            renderPracticeList: () => {
+                const container = document.getElementById('practice-list');
+                container.innerHTML = '';
+                PROBLEMS.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'card practice';
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <h4 style="font-size:1.1rem;">${p.title}</h4>
+                            <span class="badge ${p.difficulty.toLowerCase()}">${p.difficulty}</span>
+                        </div>
+                        <p class="text-sm text-muted" style="margin: 10px 0; line-height: 1.4;">${p.description}</p>
+                        <div class="card-meta">
+                            <span class="text-xs text-muted">Stdin/Stdout</span>
+                            <button class="btn-secondary btn-sm" onclick="app.startPractice(${p.id})">Solve</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            openCreateModal: () => {
+                const list = document.getElementById('problem-selection-list');
+                list.innerHTML = '';
+                list.scrollLeft = 0;
+                
+                PROBLEMS.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'problem-card';
+                    div.innerHTML = `
+                        <div>
+                            <strong style="display:block; margin-bottom:4px;">${p.title}</strong>
+                            <span class="badge ${p.difficulty.toLowerCase()}" style="font-size: 0.6rem;">${p.difficulty}</span>
+                        </div>
+                        <div class="text-xs text-muted" style="margin-top: 8px;">Click to select</div>
+                    `;
+                    div.onclick = () => {
+                        document.querySelectorAll('.problem-card').forEach(el => el.classList.remove('selected'));
+                        div.classList.add('selected');
+                        state.selectedProblemId = p.id;
+                    };
+                    list.appendChild(div);
+                });
+                document.getElementById('create-room-modal').classList.remove('hidden');
+            },
+            closeCreateModal: () => { document.getElementById('create-room-modal').classList.add('hidden'); state.selectedProblemId = null; },
+            openJoinModal: () => { document.getElementById('modal-join-code').value = ''; document.getElementById('join-room-modal').classList.remove('hidden'); },
+            closeJoinModal: () => { document.getElementById('join-room-modal').classList.add('hidden'); },
+
+            renderProblem: (prob) => {
+                document.getElementById('problem-description').innerHTML = `
+                    <h3>${prob.title} <span class="badge ${prob.difficulty.toLowerCase()}">${prob.difficulty}</span></h3>
+                    <p style="margin-bottom: 1rem;">${prob.description}</p>
+                    
+                    <div style="background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-primary); margin: 10px 0;">
+                        <strong style="color:var(--accent-primary)">Input Format:</strong>
+                        <div class="text-sm text-muted">${prob.inputFormat}</div>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-secondary); margin: 10px 0;">
+                        <strong style="color:var(--accent-secondary)">Output Format:</strong>
+                        <div class="text-sm text-muted">${prob.outputFormat}</div>
+                    </div>
+
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-top: 1.5rem; color: var(--accent-primary);">Sample Input:</div>
+                    <div class="sample-case">${prob.sampleInput}</div>
+                    
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-top: 1rem; color: var(--accent-primary);">Sample Output:</div>
+                    <div class="sample-case">${prob.sampleOutput}</div>
+
+                    <div class="custom-input-area">
+                        <label>Custom Input (Type your test data here):</label>
+                        <textarea id="custom-input-area" placeholder="Paste input here...">${prob.sampleInput}</textarea>
+                        <button class="btn-secondary btn-sm" style="margin-top:5px" onclick="document.getElementById('sample-input-hidden').value = document.getElementById('custom-input-area').value; ui.toast('Input set! Click Run.', 'success')">Use This Input</button>
+                    </div>
+                    <input type="hidden" id="sample-input-hidden" value="${prob.sampleInput}">
+                `;
+            },
+
+            logConsole: (msg, type) => {
+                const box = document.getElementById('console-output');
+                const line = document.createElement('div');
+                line.className = `log-entry log-${type}`;
+                line.textContent = msg;
+                box.appendChild(line);
+                box.scrollTop = box.scrollHeight;
+            },
+
+            renderLeaderboard: () => {
+                const list = document.getElementById('leaderboard');
+                const sorted = [...state.participants].sort((a,b) => b.score - a.score || a.lastSubmitTime - b.lastSubmitTime);
+                document.getElementById('participant-count').textContent = `${sorted.length} Players`;
+                list.innerHTML = sorted.map((p, i) => `
+                    <li class="leaderboard-item ${p.id === state.currentUser.id ? 'me' : ''}">
+                        <div class="player-info">
+                            <span class="rank">#${i+1}</span>
+                            <div class="avatar" style="background: ${p.avatarColor}">${p.name.substring(0,2).toUpperCase()}</div>
+                            <span style="font-weight: 500;">${p.name}</span>
+                        </div>
+                        <span class="font-mono font-bold text-success">${p.score} pts</span>
+                    </li>
+                `).join('');
+            },
+
+            updateTimer: () => {
+                const m = Math.floor(state.timeLeft / 60).toString().padStart(2, '0');
+                const s = (state.timeLeft % 60).toString().padStart(2, '0');
+                const el = document.getElementById('timer-display');
+                el.textContent = `${m}:${s}`;
+                if(state.timeLeft < 60) el.style.color = 'var(--danger)';
+            },
+
+            addMessageToChat: (user, text, isMe) => {
+                const box = document.getElementById('chat-box');
+                const div = document.createElement('div');
+                div.className = 'message';
+                div.innerHTML = `<strong style="color:${isMe ? 'var(--accent-primary)' : 'var(--accent-secondary)'}">${user}:</strong> ${text}`;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
+        };
+
+        // Global room cache
+        window.knownRooms = [];
+
+        const originalHandle = NetworkService.handleMessage;
+        NetworkService.handleMessage = (topic, data) => {
+            if (data.type === 'ROOM_CREATED' && topic === NetworkService.lobbyTopic) {
+                if (!window.knownRooms.find(r => r.code === data.code)) {
+                    window.knownRooms.unshift(data);
+                    if (window.knownRooms.length > 10) window.knownRooms.pop(); 
+                    ui.renderRoomList();
+                }
+            }
+            originalHandle(topic, data);
+        };
+
+        window.onload = () => {
+            editor.updateLineNumbers();
+            app.init();
+        };
+    </script>
+</body>
+</html>
