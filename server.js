@@ -240,10 +240,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Listen for a message sent by a user
     socket.on('sendMessage', ({ roomCode, text, sender }) => {
         io.to(roomCode).emit('newMessage', { text, sender });
     });
-
+    
+    // Handle user disconnection
     socket.on('disconnect', () => {
         for (const code in rooms) {
             const room = rooms[code];
