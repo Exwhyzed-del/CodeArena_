@@ -5,7 +5,6 @@ const state = {
     currentRoomCode: null,
     isPracticeMode: false,
     selectedProblemId: null,
-<<<<<<< HEAD
     currentLanguage: 'python',
     participants: [],
     timer: null,
@@ -13,29 +12,12 @@ const state = {
     problem: null,
     roomList: [],
     startTime: Date.now()
-=======
-    currentLanguage: 'javascript',
-    participants: [],
-    timer: null,
-    timeLeft: 900, // 15 mins
-    problem: null,
-    roomList: [],
-    startTime: Date.now() // To track time elapsed
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
 };
 
 // ==========================================
 // SOCKET EVENTS
 // ==========================================
-<<<<<<< HEAD
 socket.on('connect', () => console.log("Connected"));
-=======
-socket.on('connect', () => {
-    document.getElementById('connection-status').textContent = "Online";
-    document.getElementById('connection-status').classList.add('status-connected');
-});
-
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
 socket.on('lobbyUpdate', (data) => {
     if (data.type === 'add') {
         if (!state.roomList.find(r => r.code === data.room.code)) {
@@ -51,18 +33,10 @@ socket.on('lobbyUpdate', (data) => {
 socket.on('roomCreated', ({ roomCode, problem, players }) => {
     ui.closeCreateModal();
     ui.toast(`Room Created: ${roomCode}`, "success");
-<<<<<<< HEAD
-=======
-    // Host initializes with players list (just them)
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
     app.enterRoom(roomCode, problem, false, players);
 });
 
 socket.on('joinedRoom', ({ roomCode, problem, players }) => {
-<<<<<<< HEAD
-=======
-    // Joiner gets current players list
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
     app.enterRoom(roomCode, problem, false, players);
 });
 
@@ -88,10 +62,7 @@ const app = {
             app.showDashboard();
         } else {
             app.renderAuthForm();
-<<<<<<< HEAD
             document.getElementById('auth-view').classList.remove('hidden');
-=======
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
         }
     },
 
@@ -103,26 +74,15 @@ const app = {
     renderAuthForm: () => {
         const container = document.getElementById('auth-forms-container');
         const isSignup = state.authMode === 'signup';
-<<<<<<< HEAD
         
-=======
-        document.getElementById('auth-subtitle').textContent = isSignup ? "Create a new account" : "Login to start coding";
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
         document.getElementById('auth-toggle-text').textContent = isSignup ? "Already have an account?" : "New here?";
         document.getElementById('auth-toggle-btn').textContent = isSignup ? "Login" : "Create Account";
         
         let html = '';
-<<<<<<< HEAD
         if (isSignup) html += `<div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="Name"></div>`;
         html += `
             <div class="form-group"><label>Email</label><input type="email" id="auth-email" placeholder="email@example.com"></div>
             <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="password"></div>
-=======
-        if (isSignup) html += `<div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="e.g. CodeMaster"></div>`;
-        html += `
-            <div class="form-group"><label>Email</label><input type="email" id="auth-email" placeholder="name@example.com"></div>
-            <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"></div>
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
             <button class="btn-primary w-full" onclick="app.handleAuth()">${isSignup ? 'Sign Up' : 'Log In'}</button>
         `;
         container.innerHTML = html;
@@ -133,11 +93,7 @@ const app = {
         const password = document.getElementById('auth-password').value;
         const username = document.getElementById('auth-username')?.value;
         
-<<<<<<< HEAD
         if (!email || !password) return ui.toast("Email and password required", "error");
-=======
-        if (!email || !password) return ui.toast("Fill all fields", "error");
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
 
         const res = await fetch('/api/auth', {
             method: 'POST',
@@ -145,7 +101,6 @@ const app = {
             body: JSON.stringify({ email, password, name: username, isSignup: state.authMode === 'signup' })
         });
 
-<<<<<<< HEAD
         const data = await res.json();
         if (res.ok) {
             state.currentUser = data.user;
@@ -179,17 +134,11 @@ const app = {
         const title = document.getElementById('custom-title').value;
         const desc = document.getElementById('custom-desc').value;
         const diff = document.getElementById('custom-difficulty').value;
+        const sampleIn = document.getElementById('custom-sample-in').value;
+        const sampleOut = document.getElementById('custom-sample-out').value;
         const hiddenJson = document.getElementById('custom-hidden-json').value;
         
-        // Gather Samples
-        const samples = [];
-        for(let i=1; i<=3; i++) {
-            const inp = document.getElementById(`custom-sample-in-${i}`).value;
-            const out = document.getElementById(`custom-sample-out-${i}`).value;
-            if(inp && out) samples.push({ input: inp, output: out });
-        }
-
-        if (!title || samples.length === 0) return ui.toast("Title and at least one Sample are required", "error");
+        if (!title || !sampleIn || !sampleOut) return ui.toast("Fill required fields", "error");
 
         let hiddenCases = [];
         try {
@@ -202,7 +151,7 @@ const app = {
             user: state.currentUser,
             customProblem: {
                 title, description: desc, difficulty: diff,
-                samples, hiddenCases
+                sampleInput: sampleIn, sampleOutput: sampleOut, hiddenCases
             }
         });
     },
@@ -420,19 +369,20 @@ const ui = {
         `).join('');
     },
 
+    // UPDATED: Expanded list to 10 problems
     renderPracticeList: () => {
         const container = document.getElementById('practice-list');
         const problems = [
-            { id: 1, title: "A + B Problem", diff: "Easy", desc: "Calculate sum." },
+            { id: 1, title: "A + B Problem", diff: "Easy", desc: "Calculate sum of two integers." },
             { id: 2, title: "Reverse String", diff: "Easy", desc: "Reverse a string." },
             { id: 3, title: "Even or Odd", diff: "Easy", desc: "Check parity." },
-            { id: 4, title: "Max in Array", diff: "Easy", desc: "Find maximum." },
-            { id: 5, title: "Sum of Digits", diff: "Easy", desc: "Sum digits." },
-            { id: 6, title: "Palindrome", diff: "Easy", desc: "Check palindrome." },
+            { id: 4, title: "Max in Array", diff: "Easy", desc: "Find maximum number." },
+            { id: 5, title: "Sum of Digits", diff: "Easy", desc: "Sum the digits." },
+            { id: 6, title: "Palindrome Check", diff: "Easy", desc: "Check palindrome." },
             { id: 7, title: "Factorial", diff: "Easy", desc: "Compute factorial." },
-            { id: 8, title: "Prime Check", diff: "Medium", desc: "Check prime." },
-            { id: 9, title: "Fibonacci", diff: "Medium", desc: "Nth Fibonacci." },
-            { id: 10, title: "Reverse Words", diff: "Medium", desc: "Reverse words." }
+            { id: 8, title: "Prime Check", diff: "Medium", desc: "Check if prime." },
+            { id: 9, title: "Fibonacci Number", diff: "Medium", desc: "Find Nth Fibonacci." },
+            { id: 10, title: "Reverse Words", diff: "Medium", desc: "Reverse word order." }
         ];
         
         container.innerHTML = problems.map(p => `
@@ -447,6 +397,7 @@ const ui = {
         `).join('');
     },
 
+    // UPDATED: Expanded list to 10 problems in modal
     openCreateModal: () => {
         const list = document.getElementById('problem-selection-list');
         const problems = [
@@ -469,37 +420,17 @@ const ui = {
     closeJoinModal: () => document.getElementById('join-room-modal').classList.add('hidden'),
 
     renderProblem: (prob) => {
-        // Check for multiple samples (Custom Problem)
-        let samplesHtml = '';
-        if (prob.samples && prob.samples.length > 0) {
-            prob.samples.forEach((s, i) => {
-                samplesHtml += `
-                    <div style="margin-top:1rem;">
-                        <div style="font-weight:600; color:var(--accent-primary);">Sample Input ${i+1}:</div>
-                        <div class="sample-case">${s.input}</div>
-                        <div style="font-weight:600; color:var(--accent-primary);">Sample Output ${i+1}:</div>
-                        <div class="sample-case">${s.output}</div>
-                    </div>
-                `;
-            });
-        } else {
-            // Standard problem
-            samplesHtml = `
-                <div style="font-weight:600; color:var(--accent-primary);">Sample Input:</div>
-                <div class="sample-case">${prob.sampleInput}</div>
-                <div style="font-weight:600; color:var(--accent-primary);">Sample Output:</div>
-                <div class="sample-case">${prob.sampleOutput}</div>
-            `;
-        }
-
         document.getElementById('problem-description').innerHTML = `
             <h3>${prob.title} <span class="badge ${prob.difficulty?.toLowerCase()}">${prob.difficulty}</span></h3>
             <p style="margin: 1rem 0;">${prob.description}</p>
-            ${samplesHtml}
+            <div style="font-weight:600; color:var(--accent-primary);">Sample Input:</div>
+            <div class="sample-case">${prob.sampleInput}</div>
+            <div style="font-weight:600; color:var(--accent-primary);">Sample Output:</div>
+            <div class="sample-case">${prob.sampleOutput}</div>
             
             <div class="custom-input-area">
                 <label>Test Input (Used for Run)</label>
-                <textarea id="custom-input-area">${prob.sampleInput || (prob.samples ? prob.samples[0].input : "")}</textarea>
+                <textarea id="custom-input-area">${prob.sampleInput}</textarea>
             </div>
         `;
     },
@@ -543,5 +474,3 @@ const ui = {
 };
 
 window.onload = app.init;
-=======
->>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
