@@ -5,6 +5,7 @@ const state = {
     currentRoomCode: null,
     isPracticeMode: false,
     selectedProblemId: null,
+<<<<<<< HEAD
     currentLanguage: 'python',
     participants: [],
     timer: null,
@@ -12,12 +13,29 @@ const state = {
     problem: null,
     roomList: [],
     startTime: Date.now()
+=======
+    currentLanguage: 'javascript',
+    participants: [],
+    timer: null,
+    timeLeft: 900, // 15 mins
+    problem: null,
+    roomList: [],
+    startTime: Date.now() // To track time elapsed
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
 };
 
 // ==========================================
 // SOCKET EVENTS
 // ==========================================
+<<<<<<< HEAD
 socket.on('connect', () => console.log("Connected"));
+=======
+socket.on('connect', () => {
+    document.getElementById('connection-status').textContent = "Online";
+    document.getElementById('connection-status').classList.add('status-connected');
+});
+
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
 socket.on('lobbyUpdate', (data) => {
     if (data.type === 'add') {
         if (!state.roomList.find(r => r.code === data.room.code)) {
@@ -33,10 +51,18 @@ socket.on('lobbyUpdate', (data) => {
 socket.on('roomCreated', ({ roomCode, problem, players }) => {
     ui.closeCreateModal();
     ui.toast(`Room Created: ${roomCode}`, "success");
+<<<<<<< HEAD
+=======
+    // Host initializes with players list (just them)
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
     app.enterRoom(roomCode, problem, false, players);
 });
 
 socket.on('joinedRoom', ({ roomCode, problem, players }) => {
+<<<<<<< HEAD
+=======
+    // Joiner gets current players list
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
     app.enterRoom(roomCode, problem, false, players);
 });
 
@@ -62,7 +88,10 @@ const app = {
             app.showDashboard();
         } else {
             app.renderAuthForm();
+<<<<<<< HEAD
             document.getElementById('auth-view').classList.remove('hidden');
+=======
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
         }
     },
 
@@ -74,15 +103,26 @@ const app = {
     renderAuthForm: () => {
         const container = document.getElementById('auth-forms-container');
         const isSignup = state.authMode === 'signup';
+<<<<<<< HEAD
         
+=======
+        document.getElementById('auth-subtitle').textContent = isSignup ? "Create a new account" : "Login to start coding";
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
         document.getElementById('auth-toggle-text').textContent = isSignup ? "Already have an account?" : "New here?";
         document.getElementById('auth-toggle-btn').textContent = isSignup ? "Login" : "Create Account";
         
         let html = '';
+<<<<<<< HEAD
         if (isSignup) html += `<div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="Name"></div>`;
         html += `
             <div class="form-group"><label>Email</label><input type="email" id="auth-email" placeholder="email@example.com"></div>
             <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="password"></div>
+=======
+        if (isSignup) html += `<div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="e.g. CodeMaster"></div>`;
+        html += `
+            <div class="form-group"><label>Email</label><input type="email" id="auth-email" placeholder="name@example.com"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"></div>
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
             <button class="btn-primary w-full" onclick="app.handleAuth()">${isSignup ? 'Sign Up' : 'Log In'}</button>
         `;
         container.innerHTML = html;
@@ -93,7 +133,11 @@ const app = {
         const password = document.getElementById('auth-password').value;
         const username = document.getElementById('auth-username')?.value;
         
+<<<<<<< HEAD
         if (!email || !password) return ui.toast("Email and password required", "error");
+=======
+        if (!email || !password) return ui.toast("Fill all fields", "error");
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
 
         const res = await fetch('/api/auth', {
             method: 'POST',
@@ -101,6 +145,7 @@ const app = {
             body: JSON.stringify({ email, password, name: username, isSignup: state.authMode === 'signup' })
         });
 
+<<<<<<< HEAD
         const data = await res.json();
         if (res.ok) {
             state.currentUser = data.user;
@@ -498,3 +543,5 @@ const ui = {
 };
 
 window.onload = app.init;
+=======
+>>>>>>> 5ac27384ac2a5631fa52865cc9cd618bc443daa7
