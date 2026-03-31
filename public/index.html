@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeArena</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <!-- 1. Auth View -->
+    <section id="auth-view">
+        <div class="auth-card">
+            <h1 class="auth-title">CodeArena</h1>
+            <div class="auth-subtitle" id="auth-subtitle">Login to compete or create</div>
+            <div id="auth-forms-container"></div>
+            <div class="auth-toggle">
+                <span id="auth-toggle-text">New here?</span>
+                <button class="btn-link" onclick="app.toggleAuthMode()" id="auth-toggle-btn">Create Account</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Dashboard View -->
+    <section id="dashboard-view" class="hidden">
+        <header style="margin-bottom: 2rem; border:none; background:none;">
+            <div class="text-xl">CodeArena</div>
+            <div class="flex items-center gap-4">
+                <div id="user-display" class="font-bold"></div>
+                <button class="btn-secondary btn-sm" onclick="app.logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="dashboard-nav">
+            <div class="nav-tab active" onclick="ui.switchTab('multiplayer')" id="tab-multiplayer">Live Battles</div>
+            <div class="nav-tab" onclick="ui.switchTab('practice')" id="tab-practice">Practice Mode</div>
+        </div>
+
+        <div id="view-multiplayer">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <h3>Active Rooms</h3>
+                <div class="flex gap-2">
+                    <button class="btn-secondary" onclick="ui.openJoinModal()">Join Room</button>
+                    <button class="btn-primary" onclick="ui.openCreateModal()">+ Create Room</button>
+                </div>
+            </div>
+            <div id="room-list" class="room-grid" style="margin-top: 1.5rem;"></div>
+        </div>
+
+        <div id="view-practice" class="hidden">
+            <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
+                <h3>Practice Problems</h3>
+                <span class="text-sm text-muted">Sharpen your skills. No timer.</span>
+            </div>
+            <div id="practice-list" class="room-grid"></div>
+        </div>
+    </section>
+
+    <!-- Create Room Modal -->
+    <div id="create-room-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 900px;">
+            <h3 style="margin-bottom: 1rem;">Create Battle Room</h3>
+            
+            <div class="dashboard-nav" style="border:none; margin-bottom:1rem;">
+                <div class="nav-tab active" id="tab-standard" onclick="ui.switchCreateTab('standard')">Standard Problem</div>
+                <div class="nav-tab" id="tab-custom" onclick="ui.switchCreateTab('custom')">Custom Question</div>
+            </div>
+
+            <!-- Standard Tab -->
+            <div id="create-standard-view">
+                <div id="problem-selection-list" class="problem-carousel"></div>
+                <div class="flex justify-between" style="margin-top: 1.5rem;">
+                    <button class="btn-secondary" onclick="ui.closeCreateModal()">Cancel</button>
+                    <button class="btn-primary" onclick="app.confirmCreateStandard()">Create Battle</button>
+                </div>
+            </div>
+
+            <!-- Custom Tab -->
+            <div id="create-custom-view" class="hidden">
+                <div class="flex gap-4">
+                    <div class="form-group" style="flex:2">
+                        <label>Title</label>
+                        <input type="text" id="custom-title" placeholder="e.g. Valid Anagram">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Difficulty</label>
+                        <select id="custom-difficulty">
+                            <option value="Easy">Easy</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="custom-desc" style="height: 60px;" placeholder="Describe the problem..."></textarea>
+                </div>
+                
+                <!-- Sample Cases 1, 2, 3 -->
+                <div style="border-top: 1px solid var(--border); margin: 1rem 0; padding-top: 1rem;">
+                    <h4 class="text-success">Sample Test Cases (Visible)</h4>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Sample Input 1</label>
+                            <textarea id="custom-sample-in-1" style="font-family: monospace; height: 50px;"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Sample Output 1</label>
+                            <textarea id="custom-sample-out-1" style="font-family: monospace; height: 50px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Sample Input 2</label>
+                            <textarea id="custom-sample-in-2" style="font-family: monospace; height: 50px;"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Sample Output 2</label>
+                            <textarea id="custom-sample-out-2" style="font-family: monospace; height: 50px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Sample Input 3</label>
+                            <textarea id="custom-sample-in-3" style="font-family: monospace; height: 50px;"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Sample Output 3</label>
+                            <textarea id="custom-sample-out-3" style="font-family: monospace; height: 50px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border); margin: 1rem 0; padding-top: 1rem;">
+                    <h4 class="text-danger">Hidden Test Cases (JSON Array)</h4>
+                    <textarea id="custom-hidden-json" style="font-family: monospace; height: 80px; font-size: 0.8rem;" placeholder='[{"input": "test", "output": "result"}]'></textarea>
+                </div>
+
+                <!-- BUTTONS -->
+                <div class="flex justify-between" style="margin-top: 1.5rem; flex-shrink: 0;">
+                    <button class="btn-secondary" onclick="ui.closeCreateModal()">Cancel</button>
+                    <button class="btn-primary" onclick="app.confirmCreateCustom()">Create Custom Battle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div id="join-room-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1.5rem;">Join Battle</h3>
+            <div class="form-group">
+                <label>Room Code</label>
+                <input type="text" id="modal-join-code" style="text-transform: uppercase; text-align: center;">
+            </div>
+            <div class="flex justify-between" style="margin-top: 2rem;">
+                <button class="btn-secondary" onclick="ui.closeJoinModal()">Cancel</button>
+                <button class="btn-primary" onclick="app.confirmJoinRoom()">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Arena View -->
+    <section id="arena-view" class="hidden">
+        <header>
+            <div class="flex items-center gap-4">
+                <span class="text-xl" style="font-weight: bold; color: white;">CodeArena</span>
+                <span class="mode-indicator mode-battle" id="mode-badge">BATTLE</span>
+                <button class="btn-secondary text-xs hidden" id="room-code-btn" onclick="app.copyRoomCode()">ROOM: ---</button>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="timer-container">
+                    <div class="text-xs text-muted">TIME</div>
+                    <div id="timer-display" style="font-family: var(--font-mono); font-weight: 600;">15:00</div>
+                </div>
+                <button class="btn-danger" onclick="app.leaveRoom()">Exit</button>
+            </div>
+        </header>
+
+        <div class="arena-main">
+            <div class="left-panel">
+                <div class="problem-split">
+                    <div class="editor-toolbar">
+                        <span>Problem</span>
+                        <select id="language-selector" onchange="editor.changeLanguage(this.value)">
+                            <option value="python">Python</option>
+                            <option value="cpp">C++</option>
+                            <option value="java">Java</option>
+                        </select>
+                    </div>
+                    <div class="problem-content" id="problem-description"></div>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-toolbar">
+                        <span id="filename-display">main.py</span>
+                        <div class="flex gap-2">
+                            <button class="btn-secondary text-sm" onclick="editor.runCode()">▶ Run</button>
+                            <button class="btn-success text-sm" onclick="editor.submitCode()">⚡ Submit</button>
+                        </div>
+                    </div>
+                    <div class="code-wrapper">
+                        <div class="line-numbers" id="line-numbers">1</div>
+                        <textarea id="code-editor" spellcheck="false" oninput="editor.updateLineNumbers()" onkeydown="editor.handleTab(event)" onscroll="editor.syncScroll()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel" id="right-panel">
+                <div class="panel-section">
+                    <div class="panel-header">Leaderboard</div>
+                    <ul class="leaderboard-list" id="leaderboard"></ul>
+                </div>
+                <div class="panel-section chat-area">
+                    <div class="panel-header">Chat</div>
+                    <div class="chat-messages" id="chat-box"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-msg" placeholder="Message..." onkeypress="if(event.key === 'Enter') app.sendChat()">
+                        <button class="btn-primary btn-icon" onclick="app.sendChat()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="console-overlay">
+            <div class="console-header">
+                <span>OUTPUT</span>
+                <button class="btn-secondary btn-icon" onclick="editor.toggleConsole()">✕</button>
+            </div>
+            <div class="console-body" id="console-output"></div>
+        </div>
+    </section>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/client.js"></script>
+</body>
+</html>
