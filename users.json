@@ -1,0 +1,14 @@
+{
+  "ayush.saraswat_cs23@gla.ac.in": {
+    "name": "xyz",
+    "password": "$2b$10$qjmqzSl0GC6PZBvyNYtPIeor3/wr0CM.UfADiCgDV6quWMo2SphB6",
+    "avatarColor": "hsl(108.09717277790192, 70%, 60%)",
+    "createdAt": "2026-04-23T16:21:40.396Z"
+  },
+  "xyz@gmail.com": {
+    "name": "Aryan",
+    "password": "$2b$10$.kEC1C/ZI0hialaXbSQBEOfniA0qhGfMfnLA2eMv/e1P2tDMv7q8a",
+    "avatarColor": "hsl(317.1303514692949, 70%, 60%)",
+    "createdAt": "2026-04-23T16:43:56.471Z"
+  }
+}
