@@ -4,20 +4,27 @@ const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
+<<<<<<< HEAD
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+=======
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
+<<<<<<< HEAD
 const JWT_SECRET = process.env.JWT_SECRET || 'your-very-secret-key-change-this';
+=======
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
 
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+<<<<<<< HEAD
 // --- DATABASE SIMULATION ---
 const USERS_FILE = path.join(__dirname, 'users.json');
 let users = {};
@@ -34,6 +41,8 @@ function saveUsers() {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
+=======
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
 // Create main temp directory
 const mainTempDir = path.join(__dirname, 'temp');
 if (!fs.existsSync(mainTempDir)) {
@@ -54,6 +63,7 @@ const PROBLEMS = [
     { id: 10, title: "Reverse Words", difficulty: "Medium", description: "Reverse words order.", sampleInput: "hello world", sampleOutput: "world hello", templates: { python: `print(" ".join(input().split()[::-1]))`, cpp: `#include<iostream>\n#include<string>\n#include<vector>\nusing namespace std;\nint main(){string w;vector<string>v;while(cin>>w)v.push_back(w);for(int i=v.size()-1;i>=0;i--)cout<<v[i]<<" ";}`, java: `import java.util.*;\npublic class Main{public static void main(String[]a){Scanner s=new Scanner(System.in);List<String>l=new ArrayList<>();while(s.hasNext())l.add(s.next());Collections.reverse(l);System.out.println(String.join(" ",l));}}` } }
 ];
 
+<<<<<<< HEAD
 const rooms = {}; 
 
 // --- AUTH ROUTES ---
@@ -100,14 +110,35 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+=======
+// --- DATABASE ---
+const users = {};
+const rooms = {}; 
+
+// --- ROUTES ---
+app.post('/api/auth', (req, res) => {
+    const { email, password, name } = req.body;
+    const user = users[email] || { name: email.split('@')[0], password, avatarColor: `hsl(${Math.random()*360}, 70%, 60%)` };
+    users[email] = user;
+    res.json({ success: true, user: { email, ...user } });
+});
+
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
 app.get('/api/problem/:id', (req, res) => {
     const problem = PROBLEMS.find(p => p.id === parseInt(req.params.id));
     res.json(problem);
 });
 
+<<<<<<< HEAD
 // --- EXECUTION ENGINE ---
 function runCode(code, lang, input, callback) {
     const jobId = Date.now();
+=======
+// --- EXECUTION ENGINE (Fixed for Java/C++) ---
+function runCode(code, lang, input, callback) {
+    const jobId = Date.now();
+    // Create a unique folder for this execution
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
     const workDir = path.join(mainTempDir, `${jobId}`);
     fs.mkdirSync(workDir);
 
@@ -117,6 +148,7 @@ function runCode(code, lang, input, callback) {
     let filePath = '';
     let cmd = '';
 
+<<<<<<< HEAD
     const isWindows = process.platform === 'win32';
 
     if (lang === 'python') {
@@ -155,13 +187,49 @@ function runCode(code, lang, input, callback) {
                 userError = `Error: The ${lang} compiler/interpreter is not installed or not in the system PATH.\n\nDetails for host:\n- Python: Install from python.org\n- C++: Install MinGW or GCC\n- Java: Install JDK\n\nOriginal Error: ${userError}`;
             }
             callback(userError);
+=======
+    if (lang === 'python') {
+        filePath = path.join(workDir, 'script.py');
+        fs.writeFileSync(filePath, code);
+        cmd = `python "${filePath}" < "${inputPath}"`;
+    } 
+    else if (lang === 'cpp') {
+        filePath = path.join(workDir, 'script.cpp');
+        const outPath = path.join(workDir, 'script.exe'); // .exe works on Windows, fine on Linux usually too, or remove extension
+        fs.writeFileSync(filePath, code);
+        // Compile and Run
+        cmd = `g++ "${filePath}" -o "${outPath}" && "${outPath}" < "${inputPath}"`;
+    } 
+    else if (lang === 'java') {
+        // Java requires class Main
+        filePath = path.join(workDir, 'Main.java');
+        fs.writeFileSync(filePath, code);
+        // Compile and Run in the work directory
+        cmd = `cd "${workDir}" && javac Main.java && java Main < input.txt`;
+    }
+
+    // Execute
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
+        // Cleanup directory
+        try {
+            fs.rmSync(workDir, { recursive: true, force: true });
+        } catch (e) { console.log("Cleanup error", e); }
+
+        if (error) {
+            // Return detailed error for debugging
+            callback(stderr || error.message);
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
         } else {
             callback(null, stdout);
         }
     });
 }
 
+<<<<<<< HEAD
 app.post('/api/run', authenticateToken, (req, res) => {
+=======
+app.post('/api/run', (req, res) => {
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
     const { code, language, input } = req.body;
     runCode(code, language, input, (err, output) => {
         if (err) return res.json({ output: "Error: " + err, status: "error" });
@@ -169,7 +237,11 @@ app.post('/api/run', authenticateToken, (req, res) => {
     });
 });
 
+<<<<<<< HEAD
 app.post('/api/submit', authenticateToken, (req, res) => {
+=======
+app.post('/api/submit', (req, res) => {
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
     const { code, language, roomCode, timeElapsed, problemId } = req.body;
     
     let problem = null;
@@ -184,12 +256,20 @@ app.post('/api/submit', authenticateToken, (req, res) => {
 
     if (!problem) return res.status(400).json({ error: "Problem not found" });
 
+<<<<<<< HEAD
+=======
+    // Run Sample
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
     runCode(code, language, problem.sampleInput, (err, output) => {
         if (err) return res.json({ status: "error", message: "Runtime Error on Sample" });
         if (output.trim() !== problem.sampleOutput.trim()) {
             return res.json({ status: "wrong_answer", message: "Failed Sample Test Case" });
         }
 
+<<<<<<< HEAD
+=======
+        // Run Hidden
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
         if (hiddenCases.length === 0) return calculateScore();
         
         let pending = hiddenCases.length;

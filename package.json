@@ -1,15 +1,24 @@
 {
+<<<<<<< HEAD
   "name": "codearena",
   "version": "1.0.0",
   "description": "Real-time coding battle platform",
+=======
+  "name": "codearena-node",
+  "version": "1.0.0",
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+<<<<<<< HEAD
     "bcryptjs": "^3.0.3",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
+=======
+    "express": "^4.18.2",
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
     "socket.io": "^4.7.2"
   }
 }

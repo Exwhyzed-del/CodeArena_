@@ -1,4 +1,5 @@
 node_modules
+<<<<<<< HEAD
 npm-debug.log
 temp
 users.json
@@ -6,3 +7,7 @@ users.json
 .gitignore
 Dockerfile
 .dockerignore
+=======
+temp
+.git
+>>>>>>> 97f4010be1e32118d1932b447512260f87e488ff
